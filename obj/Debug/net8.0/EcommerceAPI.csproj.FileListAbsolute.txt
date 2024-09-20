@@ -31,3 +31,4 @@ D:\Apps\Web\API\EcommerceAPI\obj\Debug\net8.0\refint\EcommerceAPI.dll
 D:\Apps\Web\API\EcommerceAPI\obj\Debug\net8.0\EcommerceAPI.pdb
 D:\Apps\Web\API\EcommerceAPI\obj\Debug\net8.0\EcommerceAPI.genruntimeconfig.cache
 D:\Apps\Web\API\EcommerceAPI\obj\Debug\net8.0\ref\EcommerceAPI.dll
+D:\Apps\Web\API\EcommerceAPI\obj\Debug\net8.0\EcommerceAPI.sourcelink.json
