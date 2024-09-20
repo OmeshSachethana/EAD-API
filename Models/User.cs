@@ -1,9 +1,12 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using System.ComponentModel.DataAnnotations;
 
 public class User
 {
-    [Key]
-    public string Id { get; set; }  // Change to string for MongoDB ObjectId
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? Id { get; set; }  // Nullable Id to let MongoDB auto-generate
 
     [Required]
     public string Username { get; set; }
