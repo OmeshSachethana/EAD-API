@@ -17,6 +17,8 @@ public class User
     [Required]
     public required string Role { get; set; }
 
+    [Required]
+    public required string Password { get; set; }  // Added Password field
+
     public bool IsActive { get; set; } = true;
 }
-
