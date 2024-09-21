@@ -19,21 +19,22 @@ public class UsersController : ControllerBase
 
     // Login endpoint to authenticate the user and generate a JWT token
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
+public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
+{
+    // Find user by email
+    var user = await _context.Users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
+    
+    // Verify the user exists and the password matches using BCrypt
+    if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
     {
-        // Find user by email
-        var user = await _context.Users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
-        
-        // Verify the user exists and the password matches
-        if (user == null || user.Password != request.Password) // Replace with proper password hashing
-        {
-            return Unauthorized();
-        }
-
-        // Generate JWT token using JwtHelper
-        var token = _jwtHelper.GenerateJwtToken(user);
-        return Ok(new { Token = token });
+        return Unauthorized();
     }
+
+    // Generate JWT token using JwtHelper
+    var token = _jwtHelper.GenerateJwtToken(user);
+    return Ok(new { Token = token });
+}
+
 
     [Authorize] // Protect this endpoint so that only authenticated users can access it
     [HttpGet]
@@ -43,40 +44,50 @@ public class UsersController : ControllerBase
         return Ok(users);
     }
 
-    [Authorize]
-    [HttpPost]
-    public async Task<IActionResult> CreateUser(User user)
+
+[HttpPost]
+public async Task<IActionResult> CreateUser(User user)
+{
+    if (!ModelState.IsValid)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        // Ensure that MongoDB auto-generates the Id
-        await _context.Users.InsertOneAsync(user);
-
-        // Return the created user with the auto-generated Id
-        return Ok(user);
+        return BadRequest(ModelState);
     }
 
-    [Authorize]
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateUser(string id, User user)
+    // Hash the password before saving the user
+    user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
+    // Ensure that MongoDB auto-generates the Id
+    await _context.Users.InsertOneAsync(user);
+
+    // Return the created user with the auto-generated Id
+    return Ok(user);
+}
+
+[Authorize]
+[HttpPut("{id}")]
+public async Task<IActionResult> UpdateUser(string id, User user)
+{
+    var existingUser = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
+    if (existingUser == null)
     {
-        var existingUser = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
-        if (existingUser == null)
-        {
-            return NotFound();
-        }
-
-        existingUser.Username = user.Username;
-        existingUser.Email = user.Email;
-        existingUser.Role = user.Role;
-        existingUser.IsActive = user.IsActive;
-
-        await _context.Users.ReplaceOneAsync(u => u.Id == id, existingUser);
-        return Ok(existingUser);
+        return NotFound();
     }
+
+    existingUser.Username = user.Username;
+    existingUser.Email = user.Email;
+    existingUser.Role = user.Role;
+    existingUser.IsActive = user.IsActive;
+
+    // If the password is updated, hash the new password
+    if (!string.IsNullOrEmpty(user.Password))
+    {
+        existingUser.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+    }
+
+    await _context.Users.ReplaceOneAsync(u => u.Id == id, existingUser);
+    return Ok(existingUser);
+}
+
 
     [Authorize]
     [HttpDelete("{id}")]
