@@ -2,18 +2,40 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 [Route("api/[controller]")]
 [ApiController]
 public class UsersController : ControllerBase
 {
     private readonly MongoDbContext _context;
+    private readonly JwtHelper _jwtHelper;
 
-    public UsersController(MongoDbContext context)
+    public UsersController(MongoDbContext context, JwtHelper jwtHelper)
     {
         _context = context;
+        _jwtHelper = jwtHelper;
     }
 
+    // Login endpoint to authenticate the user and generate a JWT token
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
+    {
+        // Find user by email
+        var user = await _context.Users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
+        
+        // Verify the user exists and the password matches
+        if (user == null || user.Password != request.Password) // Replace with proper password hashing
+        {
+            return Unauthorized();
+        }
+
+        // Generate JWT token using JwtHelper
+        var token = _jwtHelper.GenerateJwtToken(user);
+        return Ok(new { Token = token });
+    }
+
+    [Authorize] // Protect this endpoint so that only authenticated users can access it
     [HttpGet]
     public async Task<IActionResult> GetAllUsers()
     {
@@ -21,23 +43,23 @@ public class UsersController : ControllerBase
         return Ok(users);
     }
 
+    [Authorize]
     [HttpPost]
-    [HttpPost]
-public async Task<IActionResult> CreateUser(User user)
-{
-    if (!ModelState.IsValid)
+    public async Task<IActionResult> CreateUser(User user)
     {
-        return BadRequest(ModelState);
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Ensure that MongoDB auto-generates the Id
+        await _context.Users.InsertOneAsync(user);
+
+        // Return the created user with the auto-generated Id
+        return Ok(user);
     }
 
-    // Ensure that MongoDB auto-generates the Id
-    await _context.Users.InsertOneAsync(user);
-
-    // Return the created user with the auto-generated Id
-    return Ok(user);
-}
-
-
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateUser(string id, User user)
     {
@@ -56,6 +78,7 @@ public async Task<IActionResult> CreateUser(User user)
         return Ok(existingUser);
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {
@@ -67,3 +90,7 @@ public async Task<IActionResult> CreateUser(User user)
         return Ok();
     }
 }
+
+
+
+controller
