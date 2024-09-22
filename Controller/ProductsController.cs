@@ -49,6 +49,18 @@ public class ProductsController : ControllerBase
         return Ok(products);
     }
 
+    [Authorize(Roles = "Vendor, Administrator")]
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetProductById(string id)
+    {
+        var product = await _context.Products.Find(p => p.Id == id).FirstOrDefaultAsync();
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(product);
+    }
 
     [Authorize(Roles = "Vendor")]
     [HttpPut("{id}")]
