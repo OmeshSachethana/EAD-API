@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims; // Add this line
 
 [Route("api/[controller]")]
 [ApiController]
@@ -18,16 +19,30 @@ public class ProductsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateProduct([FromBody] ProductRequest request)
     {
+        if (request == null)
+        {
+            return BadRequest("Product request cannot be null.");
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Use NameIdentifier for the ID
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Unauthorized("User ID not found.");
+        }
+        Console.WriteLine($"User ID from claims: {userIdClaim}");
+
         var product = new Product
         {
             Name = request.Name,
             Category = request.Category,
-            VendorId = User.FindFirst("sub").Value  // Associate the product with the vendor
+            VendorId = userIdClaim  // Associate the product with the vendor
         };
 
         await _context.Products.InsertOneAsync(product);
         return Ok(product);
     }
+
+
 
     [Authorize(Roles = "Vendor")]
     [HttpPut("{id}")]

@@ -32,6 +32,7 @@ public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
 
     // Generate JWT token using JwtHelper
     var token = _jwtHelper.GenerateJwtToken(user);
+    Console.WriteLine($"User found: {user.Username}, Role: {user.Role}, ID: {user.Id}");
     return Ok(new { Token = token });
 }
 
