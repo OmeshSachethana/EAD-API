@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims; // Add this line
+using System.Security.Claims;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -24,31 +24,43 @@ public class ProductsController : ControllerBase
             return BadRequest("Product request cannot be null.");
         }
 
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Use NameIdentifier for the ID
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; 
         if (string.IsNullOrEmpty(userIdClaim))
         {
             return Unauthorized("User ID not found.");
         }
-        Console.WriteLine($"User ID from claims: {userIdClaim}");
 
         var product = new Product
         {
             Name = request.Name,
             Category = request.Category,
-            VendorId = userIdClaim  // Associate the product with the vendor
+            VendorId = userIdClaim 
         };
 
         await _context.Products.InsertOneAsync(product);
         return Ok(product);
     }
 
+    [Authorize(Roles = "Vendor, Administrator")]
+    [HttpGet]
+    public async Task<IActionResult> GetAllProducts()
+    {
+        var products = await _context.Products.Find(_ => true).ToListAsync();
+        return Ok(products);
+    }
 
 
     [Authorize(Roles = "Vendor")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(string id, [FromBody] ProductRequest request)
     {
-        var product = await _context.Products.Find(p => p.Id == id && p.VendorId == User.FindFirst("sub").Value).FirstOrDefaultAsync();
+        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(vendorIdClaim))
+        {
+            return Unauthorized("User ID not found.");
+        }
+
+        var product = await _context.Products.Find(p => p.Id == id && p.VendorId == vendorIdClaim).FirstOrDefaultAsync();
         if (product == null)
         {
             return NotFound();
@@ -56,7 +68,7 @@ public class ProductsController : ControllerBase
 
         product.Name = request.Name;
         product.Category = request.Category;
-        
+
         await _context.Products.ReplaceOneAsync(p => p.Id == id, product);
         return Ok(product);
     }
@@ -65,7 +77,13 @@ public class ProductsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProduct(string id)
     {
-        var result = await _context.Products.DeleteOneAsync(p => p.Id == id && p.VendorId == User.FindFirst("sub").Value);
+        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(vendorIdClaim))
+        {
+            return Unauthorized("User ID not found.");
+        }
+
+        var result = await _context.Products.DeleteOneAsync(p => p.Id == id && p.VendorId == vendorIdClaim);
         if (result.DeletedCount == 0)
         {
             return NotFound();
