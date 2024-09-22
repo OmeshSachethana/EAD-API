@@ -34,6 +34,10 @@ public class ProductsController : ControllerBase
         {
             Name = request.Name,
             Category = request.Category,
+            Description = request.Description, // Set the description
+            Quantity = request.Quantity, // Set the quantity
+            Price = request.Price, // Set the price
+            ImageUrl = request.ImageUrl, // Set the image URL
             VendorId = userIdClaim 
         };
 
@@ -80,6 +84,10 @@ public class ProductsController : ControllerBase
 
         product.Name = request.Name;
         product.Category = request.Category;
+        product.Description = request.Description; // Update the description
+        product.Quantity = request.Quantity; // Update the quantity
+        product.Price = request.Price; // Update the price
+        product.ImageUrl = request.ImageUrl; // Update the image URL
 
         await _context.Products.ReplaceOneAsync(p => p.Id == id, product);
         return Ok(product);
