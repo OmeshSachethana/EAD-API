@@ -18,6 +18,17 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateOrder([FromBody] OrderRequest request)
     {
+        // Validate the request
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new
+            {
+                Message = "Invalid request data.",
+                Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
+            });
+        }
+
+        // Proceed with order creation if valid
         var order = new Order
         {
             CustomerId = request.CustomerId,
@@ -41,6 +52,7 @@ public class OrdersController : ControllerBase
             Order = order
         });
     }
+
     // Update order details before the order is dispatched
     [Authorize(Roles = "Vendor, Administrator")]
     [HttpPut("{id}")]
