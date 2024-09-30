@@ -48,34 +48,53 @@ public class CustomerOrdersController : ControllerBase
             return NotFound("Order not found or already delivered or canceled.");
         }
 
-        // Mark a specific vendor's product as delivered
+        // Mark a specific vendor's product as delivered (Partial delivery by vendor)
         if (request.PartialDelivery && !string.IsNullOrEmpty(request.VendorId))
         {
+            // Find the product for the vendor
             var product = order.Products.FirstOrDefault(p => p.VendorId == request.VendorId);
             if (product == null)
             {
                 return BadRequest("Product not found for this vendor.");
             }
 
-            // Mark this product as delivered
-            product.Status = (ProductStatus)OrderStatus.PartiallyDelivered;
-            order.IsPartiallyDelivered = true;
+            // Mark the vendor's product as partially delivered (or fully delivered based on the request)
+            product.Status = request.PartialDelivery ? ProductStatus.PartiallyDelivered : ProductStatus.Delivered;
+
+            // Check if all products are delivered, if not mark the order as partially delivered
+            if (order.Products.All(p => p.Status == ProductStatus.Delivered))
+            {
+                order.Status = OrderStatus.Delivered;
+                order.DeliveredAt = DateTime.UtcNow;
+                order.IsPartiallyDelivered = false; // The entire order is delivered
+            }
+            else
+            {
+                order.Status = OrderStatus.PartiallyDelivered;
+                order.IsPartiallyDelivered = true; // Not all products are delivered yet
+            }
         }
         else
         {
-            // Admin or CSR marks the entire order as delivered
-            order.Status = OrderStatus.Delivered;
+            // Admin or CSR marks the entire order as delivered (for all products)
+            foreach (var product in order.Products)
+            {
+                product.Status = ProductStatus.Delivered; // Mark all products as delivered
+            }
+
+            order.Status = OrderStatus.Delivered; // Set the overall order status to Delivered
             order.DeliveredAt = DateTime.UtcNow;
-            order.IsPartiallyDelivered = false;
+            order.IsPartiallyDelivered = false; // The entire order is delivered
         }
 
         order.UpdatedAt = DateTime.UtcNow;
         await _context.Orders.ReplaceOneAsync(o => o.Id == id, order);
 
-        // Notify the customer about the delivery
+        // Notify the customer about the delivery (if notification system is integrated)
         // NotificationService.NotifyCustomer(order.CustomerId, "Your order has been delivered.");
 
-        return Ok(new { Message = "Order marked as delivered and customer notified." });
+        return Ok(new { Message = "Order status updated and customer notified." });
     }
+
 }
 

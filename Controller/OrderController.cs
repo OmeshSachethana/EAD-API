@@ -21,7 +21,13 @@ public class OrdersController : ControllerBase
         var order = new Order
         {
             CustomerId = request.CustomerId,
-            Products = request.Products,  // List of products
+            Products = request.Products.Select(p => new OrderProductRequest
+            {
+                ProductId = p.ProductId,
+                VendorId = p.VendorId,
+                Quantity = p.Quantity,
+                Status = ProductStatus.Pending  // Set initial status to Pending
+            }).ToList(),
             Status = OrderStatus.Processing,
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
@@ -88,5 +94,24 @@ public class OrdersController : ControllerBase
 
         return Ok(new { Status = order.Status });
     }
+
+    [Authorize(Roles = "Vendor, Administrator")]
+    [HttpPut("{id}/ship")]
+    public async Task<IActionResult> MarkOrderAsShipped(string id)
+    {
+        var order = await _context.Orders.Find(o => o.Id == id && o.Status == OrderStatus.Processing).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return BadRequest("Order cannot be marked as shipped. It may be cancelled or already shipped/delivered.");
+        }
+
+        order.Status = OrderStatus.Shipped;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Orders.ReplaceOneAsync(o => o.Id == id, order);
+
+        return Ok(new { Message = "Order marked as shipped." });
+    }
+
 }
 
