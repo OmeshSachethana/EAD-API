@@ -21,7 +21,7 @@ public class CustomerOrdersController : ControllerBase
         var order = await _context.Orders.Find(o => o.Id == id && o.Status != OrderStatus.Delivered && !o.IsCancelled).FirstOrDefaultAsync();
         if (order == null)
         {
-            return BadRequest("Order cannot be canceled after delivery or it has already been canceled.");
+            return BadRequest(new { Message = "Order cannot be canceled after delivery or it has already been canceled." });
         }
 
         order.Status = OrderStatus.Cancelled;
@@ -45,7 +45,7 @@ public class CustomerOrdersController : ControllerBase
         var order = await _context.Orders.Find(o => o.Id == id && o.Status != OrderStatus.Delivered && !o.IsCancelled).FirstOrDefaultAsync();
         if (order == null)
         {
-            return NotFound("Order not found or already delivered or canceled.");
+            return NotFound(new { Message = "Order not found or already delivered or canceled." });
         }
 
         // Mark a specific vendor's product as delivered (Partial delivery by vendor)
@@ -55,7 +55,7 @@ public class CustomerOrdersController : ControllerBase
             var product = order.Products.FirstOrDefault(p => p.VendorId == request.VendorId);
             if (product == null)
             {
-                return BadRequest("Product not found for this vendor.");
+                return BadRequest(new { Message = "Product not found for this vendor." });
             }
 
             // Mark the vendor's product as partially delivered (or fully delivered based on the request)
@@ -95,6 +95,7 @@ public class CustomerOrdersController : ControllerBase
 
         return Ok(new { Message = "Order status updated and customer notified." });
     }
+
 
 }
 
