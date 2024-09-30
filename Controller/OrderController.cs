@@ -34,9 +34,13 @@ public class OrdersController : ControllerBase
         };
 
         await _context.Orders.InsertOneAsync(order);
-        return Ok(order);
-    }
 
+        return Ok(new
+        {
+            Message = "Order created successfully.",
+            Order = order
+        });
+    }
     // Update order details before the order is dispatched
     [Authorize(Roles = "Vendor, Administrator")]
     [HttpPut("{id}")]
@@ -45,17 +49,21 @@ public class OrdersController : ControllerBase
         var order = await _context.Orders.Find(o => o.Id == id && o.Status == OrderStatus.Processing && !o.IsCancelled).FirstOrDefaultAsync();
         if (order == null)
         {
-            return BadRequest("Order cannot be updated after dispatch or it has been canceled.");
+            return BadRequest(new { Message = "Order cannot be updated after dispatch or it has been canceled." });
         }
 
         // Update the products and notes from the request
         order.Products = request.Products;  // Update the products list
-        order.Notes = request.Notes;  // Update any notes or instructions
+        order.Notes = request.Notes;        // Update any notes or instructions
         order.UpdatedAt = DateTime.UtcNow;  // Update the timestamp for when the order is modified
 
         await _context.Orders.ReplaceOneAsync(o => o.Id == id, order);  // Save the updated order
 
-        return Ok(order);  // Return the updated order as a response
+        return Ok(new
+        {
+            Message = "Order updated successfully.",
+            Order = order  // Return the updated order as part of the response
+        });
     }
 
     // Cancel the order before it's dispatched
@@ -66,7 +74,7 @@ public class OrdersController : ControllerBase
         var order = await _context.Orders.Find(o => o.Id == id && o.Status == OrderStatus.Processing && !o.IsCancelled).FirstOrDefaultAsync();
         if (order == null)
         {
-            return BadRequest("Order cannot be canceled after dispatch or it has been canceled.");
+            return BadRequest(new { Message = "Order cannot be updated after dispatch or it has been canceled." });
         }
 
         order.Status = OrderStatus.Cancelled;
@@ -89,7 +97,7 @@ public class OrdersController : ControllerBase
         var order = await _context.Orders.Find(o => o.Id == id).FirstOrDefaultAsync();
         if (order == null)
         {
-            return NotFound("Order not found.");
+            return BadRequest(new { Message = "Order not found." });
         }
 
         return Ok(new { Status = order.Status });
@@ -102,7 +110,7 @@ public class OrdersController : ControllerBase
         var order = await _context.Orders.Find(o => o.Id == id && o.Status == OrderStatus.Processing).FirstOrDefaultAsync();
         if (order == null)
         {
-            return BadRequest("Order cannot be marked as shipped. It may be cancelled or already shipped/delivered.");
+            return BadRequest(new { Message = "Order cannot be marked as shipped. It may be cancelled or already shipped/delivered." });
         }
 
         order.Status = OrderStatus.Shipped;
