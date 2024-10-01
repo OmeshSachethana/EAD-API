@@ -49,9 +49,23 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllProducts()
     {
-        var products = await _context.Products.Find(_ => true).ToListAsync();
+        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get the user ID from the token
+        if (string.IsNullOrEmpty(vendorIdClaim))
+        {
+            return Unauthorized("User ID not found.");
+        }
+
+        // Check if the user is an administrator
+        var isAdmin = User.IsInRole("Administrator");
+        
+        // If the user is an admin, return all products; otherwise, return products for the specific vendor
+        var products = isAdmin
+            ? await _context.Products.Find(_ => true).ToListAsync() // Get all products
+            : await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Filter by VendorId
+
         return Ok(products);
     }
+
 
     [Authorize(Roles = "Vendor, Administrator")]
     [HttpGet("{id}")]
@@ -66,7 +80,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [Authorize(Roles = "Vendor")]
+    [Authorize(Roles = "Vendor, Administrator")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(string id, [FromBody] ProductRequest request)
     {
