@@ -46,18 +46,26 @@ public class ProductsController : ControllerBase
     }
 
     [Authorize(Roles = "Vendor, Administrator")]
-[HttpGet]
-public async Task<IActionResult> GetAllProducts()
-{
-    var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get the vendor ID from the token
-    if (string.IsNullOrEmpty(vendorIdClaim))
+    [HttpGet]
+    public async Task<IActionResult> GetAllProducts()
     {
-        return Unauthorized("User ID not found.");
+        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get the user ID from the token
+        if (string.IsNullOrEmpty(vendorIdClaim))
+        {
+            return Unauthorized("User ID not found.");
+        }
+
+        // Check if the user is an administrator
+        var isAdmin = User.IsInRole("Administrator");
+        
+        // If the user is an admin, return all products; otherwise, return products for the specific vendor
+        var products = isAdmin
+            ? await _context.Products.Find(_ => true).ToListAsync() // Get all products
+            : await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Filter by VendorId
+
+        return Ok(products);
     }
 
-    var products = await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Filter by VendorId
-    return Ok(products);
-}
 
     [Authorize(Roles = "Vendor, Administrator")]
     [HttpGet("{id}")]
