@@ -66,7 +66,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [Authorize(Roles = "Vendor")]
+    [Authorize(Roles = "Vendor, Administrator")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(string id, [FromBody] ProductRequest request)
     {
