@@ -54,6 +54,12 @@ public async Task<IActionResult> CreateUser(User user)
         return BadRequest(ModelState);
     }
 
+    // Check if the user role is "Customer" and set IsActive to false
+    if (user.Role == "Customer")
+    {
+        user.IsActive = false;
+    }
+
     // Hash the password before saving the user
     user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
@@ -63,6 +69,7 @@ public async Task<IActionResult> CreateUser(User user)
     // Return the created user with the auto-generated Id
     return Ok(user);
 }
+
 
 [Authorize]
 [HttpPut("{id}")]
