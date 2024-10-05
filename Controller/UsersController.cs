@@ -70,10 +70,19 @@ public async Task<IActionResult> CreateUser(User user)
     return Ok(user);
 }
 
+[Authorize]
+[HttpGet("customers")]
+public async Task<IActionResult> GetCustomers()
+{
+    var customers = await _context.Users.Find(u => u.Role == "Customer").ToListAsync();
+    return Ok(customers);
+}
+
+
 
 [Authorize]
 [HttpPut("{id}")]
-public async Task<IActionResult> UpdateUser(string id, User user)
+public async Task<IActionResult> UpdateUser(string id, [FromBody] User user)
 {
     var existingUser = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
     if (existingUser == null)
@@ -81,20 +90,16 @@ public async Task<IActionResult> UpdateUser(string id, User user)
         return NotFound();
     }
 
-    existingUser.Username = user.Username;
-    existingUser.Email = user.Email;
-    existingUser.Role = user.Role;
+    // Update only the IsActive property
     existingUser.IsActive = user.IsActive;
 
-    // If the password is updated, hash the new password
-    if (!string.IsNullOrEmpty(user.Password))
-    {
-        existingUser.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-    }
+    // If other fields are included, you might want to ignore them or validate them accordingly.
+    // e.g., if (user.Username != null) existingUser.Username = user.Username;
 
     await _context.Users.ReplaceOneAsync(u => u.Id == id, existingUser);
     return Ok(existingUser);
 }
+
 
 
     [Authorize]
