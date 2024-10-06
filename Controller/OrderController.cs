@@ -13,6 +13,24 @@ public class OrdersController : ControllerBase
         _context = context;
     }
 
+    // Fetch all orders (Authorized for Admins and Vendors)
+    [Authorize(Roles = "Administrator")]
+    [HttpGet]
+    public async Task<IActionResult> GetAllOrders()
+    {
+        var orders = await _context.Orders.Find(_ => true).ToListAsync(); // Fetch all orders from the database
+        if (orders == null || !orders.Any())
+        {
+            return NotFound(new { Message = "No orders found." });
+        }
+
+        return Ok(new
+        {
+            Message = "Orders fetched successfully.",
+            Orders = orders
+        });
+    }
+
     // Create a new customer order (by vendors or customers)
     [Authorize(Roles = "Vendor, Customer")]
     [HttpPost]
@@ -42,6 +60,7 @@ public class OrdersController : ControllerBase
             Status = OrderStatus.Processing,
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
 
         await _context.Orders.InsertOneAsync(order);
