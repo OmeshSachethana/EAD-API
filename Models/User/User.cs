@@ -18,7 +18,13 @@ public class User
     public required string Role { get; set; }
 
     [Required]
-    public required string Password { get; set; }  // Added Password field
+    public required string Password { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // Automatically set when the user is created
+
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;  // Automatically updated on modification
 }
