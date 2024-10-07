@@ -21,6 +21,8 @@ public class Order
     public DateTime? DeliveredAt { get; set; }  // When the order was delivered
 
     public bool IsCancelled { get; set; } = false;  // Tracks if the order was canceled
+
+    public bool IsPayed { get; set; } = false;  // Tracks if the order was canceled
     
     // Add the cancellation note for when an order is canceled
     public string CancellationNote { get; set; }  // Reason for cancellation provided by CSR/Admin
