@@ -46,25 +46,34 @@ public class ProductsController : ControllerBase
     }
 
     [Authorize(Roles = "Vendor, Administrator, Customer")]
-    [HttpGet]
-    public async Task<IActionResult> GetAllProducts()
+[HttpGet]
+public async Task<IActionResult> GetAllProducts()
+{
+    var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(vendorIdClaim))
     {
-        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get the user ID from the token
-        if (string.IsNullOrEmpty(vendorIdClaim))
-        {
-            return Unauthorized("User ID not found.");
-        }
-
-        // Check if the user is an administrator
-        var isAdmin = User.IsInRole("Administrator");
-        
-        // If the user is an admin, return all products; otherwise, return products for the specific vendor
-        var products = isAdmin
-            ? await _context.Products.Find(_ => true).ToListAsync() // Get all products
-            : await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Filter by VendorId
-
-        return Ok(products);
+        return Unauthorized("User ID not found.");
     }
+
+    var isCustomer = User.IsInRole("Customer");
+    var isAdminOrVendor = User.IsInRole("Administrator") || User.IsInRole("Vendor");
+
+    // If the user is a Customer, return only active products
+    if (isCustomer)
+    {
+        var activeProducts = await _context.Products.Find(p => p.IsActive == true).ToListAsync();
+        return Ok(activeProducts);
+    }
+
+    // For Admins or Vendors, return all products or filter by VendorId for Vendors
+    var products = isAdminOrVendor
+        ? await _context.Products.Find(_ => true).ToListAsync() // Get all products
+        : await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Filter by VendorId for Vendor role
+
+    return Ok(products);
+}
+
+
 
 
     [Authorize(Roles = "Vendor, Administrator")]
