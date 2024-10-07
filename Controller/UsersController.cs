@@ -19,22 +19,28 @@ public class UsersController : ControllerBase
 
     // Login endpoint to authenticate the user and generate a JWT token
     [HttpPost("login")]
-public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
-{
-    // Find user by email
-    var user = await _context.Users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
-    
-    // Verify the user exists and the password matches using BCrypt
-    if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+    public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
     {
-        return Unauthorized();
+        // Find user by email
+        var user = await _context.Users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
+
+        // Check if user exists and password matches
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        // Check if the user is active
+        if (!user.IsActive)
+        {
+            return Unauthorized(new { message = "Your account is inactive. Please contact support." });
+        }
+
+        // Generate JWT token
+        var token = _jwtHelper.GenerateJwtToken(user);
+        return Ok(new { Token = token });
     }
 
-    // Generate JWT token using JwtHelper
-    var token = _jwtHelper.GenerateJwtToken(user);
-    Console.WriteLine($"User found: {user.Username}, Role: {user.Role}, ID: {user.Id}");
-    return Ok(new { Token = token });
-}
 
 
     [Authorize] // Protect this endpoint so that only authenticated users can access it
