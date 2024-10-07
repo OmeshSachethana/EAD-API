@@ -69,10 +69,12 @@ public async Task<IActionResult> CreateUser(User user)
     // Hash the password before saving the user
     user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
-    // Ensure that MongoDB auto-generates the Id
+    // Set the CreatedAt and UpdatedAt timestamps
+    user.CreatedAt = DateTime.UtcNow;
+    user.UpdatedAt = DateTime.UtcNow;
+
     await _context.Users.InsertOneAsync(user);
 
-    // Return the created user with the auto-generated Id
     return Ok(user);
 }
 
@@ -96,11 +98,11 @@ public async Task<IActionResult> UpdateUser(string id, [FromBody] User user)
         return NotFound();
     }
 
-    // Update only the IsActive property
+    // Update IsActive property if passed
     existingUser.IsActive = user.IsActive;
 
-    // If other fields are included, you might want to ignore them or validate them accordingly.
-    // e.g., if (user.Username != null) existingUser.Username = user.Username;
+    // Set the UpdatedAt timestamp to current time
+    existingUser.UpdatedAt = DateTime.UtcNow;
 
     await _context.Users.ReplaceOneAsync(u => u.Id == id, existingUser);
     return Ok(existingUser);
