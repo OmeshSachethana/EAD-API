@@ -49,22 +49,22 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllProducts()
     {
-        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get the user ID from the token
+        // Get the user ID from the token
+        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(vendorIdClaim))
         {
             return Unauthorized("User ID not found.");
         }
 
-        // Check if the user is an administrator
-        var isAdmin = User.IsInRole("Administrator");
-        
-        // If the user is an admin, return all products; otherwise, return products for the specific vendor
-        var products = isAdmin
+        // Return all products for Administrators and Customers, 
+        // while still filtering by VendorId for Vendors
+        var products = User.IsInRole("Administrator") || User.IsInRole("Customer")
             ? await _context.Products.Find(_ => true).ToListAsync() // Get all products
             : await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Filter by VendorId
 
         return Ok(products);
     }
+
 
 
     [Authorize(Roles = "Vendor, Administrator")]
