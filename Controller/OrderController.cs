@@ -14,7 +14,7 @@ public class OrdersController : ControllerBase
     }
 
     // Fetch all orders (Authorized for Admins and Vendors)
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Roles = "Administrator, Customer")]
     [HttpGet]
     public async Task<IActionResult> GetAllOrders()
     {
@@ -145,11 +145,30 @@ public class OrdersController : ControllerBase
         }
 
         order.Status = OrderStatus.Shipped;
+        order.DispatchedAt = DateTime.UtcNow;
         order.UpdatedAt = DateTime.UtcNow;
 
         await _context.Orders.ReplaceOneAsync(o => o.Id == id, order);
 
         return Ok(new { Message = "Order marked as shipped." });
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPut("{id}/payment")]
+    public async Task<IActionResult> MarkOrderAsPayed(string id)
+    {
+        var order = await _context.Orders.Find(o => o.Id == id).FirstOrDefaultAsync();
+        if (order == null)
+        {
+            return BadRequest(new { Message = "Order cannot be marked as payed. It may be cancelled or already shipped/delivered." });
+        }
+
+        order.IsPayed = true;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Orders.ReplaceOneAsync(o => o.Id == id, order);
+
+        return Ok(new { Message = "Order marked as payed." });
     }
 
 }
