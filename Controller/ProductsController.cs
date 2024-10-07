@@ -45,7 +45,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [Authorize(Roles = "Vendor, Administrator")]
+    [Authorize(Roles = "Vendor, Administrator, Customer")]
     [HttpGet]
     public async Task<IActionResult> GetAllProducts()
     {
