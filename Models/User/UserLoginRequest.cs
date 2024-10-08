@@ -2,7 +2,7 @@
  * File: UserLoginRequest.cs
  * Description: This class represents the request model for user login, containing 
  *              the necessary properties for authenticating a user.
- * Author: Sachethana B. L. O.
+ * Author: Sachethana B. L. O
  * Date: 02/10/2024
  * 
  */

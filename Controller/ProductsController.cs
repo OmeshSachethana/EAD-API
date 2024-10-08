@@ -2,7 +2,7 @@
  * File: ProductsController.cs
  * Description: This controller handles the management of products, including creation, retrieval, updating, 
  *              deletion, and activation/deactivation of products.
- * Author: Sachethana B. L. O.
+ * Author: Sachethana B. L. O
  * Date: 02/10/2024
  * 
  * This file contains various API endpoints for managing products in the system using MongoDB as the database.

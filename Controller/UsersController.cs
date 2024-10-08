@@ -3,7 +3,7 @@
  * Description: This controller handles user-related operations such as login, user creation, 
  *              retrieval, updating, and deletion. It integrates with MongoDB for user data 
  *              storage and uses JWT for authentication.
- * Author: Sachethana B. L. O.
+ * Author: Sachethana B. L. O
  * Date: 02/10/2024
  * 
  * This file contains various API endpoints for managing users in the system using MongoDB as the database.

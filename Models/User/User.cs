@@ -3,7 +3,7 @@
  * Description: This class represents a user in the system, containing properties related 
  *              to the user's account, including username, email, role, password, 
  *              active status, and timestamps for creation and modification.
- * Author: Sachethana B. L. O.
+ * Author: Sachethana B. L. O
  * Date: 02/10/2024
  * 
  * This class is used for MongoDB document mapping and includes data annotations for validation 

@@ -4,7 +4,7 @@
  *              products in the system. It contains properties that represent the necessary 
  *              details for a product, including its name, category, description, quantity, 
  *              price, and image URL.
- * Author: Sachethana B. L. O.
+ * Author: Sachethana B. L. O
  * Date: 02/10/2024
  * 
  * This class is used for validation and mapping incoming requests to product data.
