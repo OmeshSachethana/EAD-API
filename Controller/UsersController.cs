@@ -1,3 +1,15 @@
+/*
+ * File: UsersController.cs
+ * Description: This controller handles user-related operations such as login, user creation, 
+ *              retrieval, updating, and deletion. It integrates with MongoDB for user data 
+ *              storage and uses JWT for authentication.
+ * Author: Sachethana B. L. O
+ * Date: 02/10/2024
+ * 
+ * This file contains various API endpoints for managing users in the system using MongoDB as the database.
+ * The endpoints are restricted by user roles: Vendor, Administrator, and Customer.
+ */
+
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using System.Collections.Generic;
@@ -11,6 +23,7 @@ public class UsersController : ControllerBase
     private readonly MongoDbContext _context;
     private readonly JwtHelper _jwtHelper;
 
+    // Constructor to initialize the MongoDbContext and JwtHelper services
     public UsersController(MongoDbContext context, JwtHelper jwtHelper)
     {
         _context = context;
@@ -41,79 +54,81 @@ public class UsersController : ControllerBase
         return Ok(new { Token = token });
     }
 
-
-
-    [Authorize] // Protect this endpoint so that only authenticated users can access it
+    // Endpoint to retrieve all users (requires authentication)
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllUsers()
     {
+        // Retrieve all users from the database
         var users = await _context.Users.Find(_ => true).ToListAsync();
         return Ok(users);
     }
 
-
-[HttpPost]
-public async Task<IActionResult> CreateUser(User user)
-{
-    if (!ModelState.IsValid)
+    // Endpoint to create a new user
+    [HttpPost]
+    public async Task<IActionResult> CreateUser(User user)
     {
-        return BadRequest(ModelState);
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Check if the user role is "Customer" and set IsActive to false
+        if (user.Role == "Customer")
+        {
+            user.IsActive = false;
+        }
+
+        // Hash the password before saving the user
+        user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
+        // Set the CreatedAt and UpdatedAt timestamps
+        user.CreatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Users.InsertOneAsync(user);
+
+        return Ok(user);
     }
 
-    // Check if the user role is "Customer" and set IsActive to false
-    if (user.Role == "Customer")
+    // Endpoint to retrieve all customers (requires authentication)
+    [Authorize]
+    [HttpGet("customers")]
+    public async Task<IActionResult> GetCustomers()
     {
-        user.IsActive = false;
+        // Retrieve all users with the role "Customer"
+        var customers = await _context.Users.Find(u => u.Role == "Customer").ToListAsync();
+        return Ok(customers);
     }
 
-    // Hash the password before saving the user
-    user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-
-    // Set the CreatedAt and UpdatedAt timestamps
-    user.CreatedAt = DateTime.UtcNow;
-    user.UpdatedAt = DateTime.UtcNow;
-
-    await _context.Users.InsertOneAsync(user);
-
-    return Ok(user);
-}
-
-[Authorize]
-[HttpGet("customers")]
-public async Task<IActionResult> GetCustomers()
-{
-    var customers = await _context.Users.Find(u => u.Role == "Customer").ToListAsync();
-    return Ok(customers);
-}
-
-
-
-[Authorize]
-[HttpPut("{id}")]
-public async Task<IActionResult> UpdateUser(string id, [FromBody] User user)
-{
-    var existingUser = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
-    if (existingUser == null)
+    // Endpoint to update an existing user by ID (requires authentication)
+    [Authorize]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(string id, [FromBody] User user)
     {
-        return NotFound();
+        // Find the existing user by ID
+        var existingUser = await _context.Users.Find(u => u.Id == id).FirstOrDefaultAsync();
+        if (existingUser == null)
+        {
+            return NotFound();
+        }
+
+        // Update IsActive property if passed
+        existingUser.IsActive = user.IsActive;
+
+        // Set the UpdatedAt timestamp to current time
+        existingUser.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Users.ReplaceOneAsync(u => u.Id == id, existingUser);
+        return Ok(existingUser);
     }
 
-    // Update IsActive property if passed
-    existingUser.IsActive = user.IsActive;
-
-    // Set the UpdatedAt timestamp to current time
-    existingUser.UpdatedAt = DateTime.UtcNow;
-
-    await _context.Users.ReplaceOneAsync(u => u.Id == id, existingUser);
-    return Ok(existingUser);
-}
-
-
-
+    // Endpoint to delete a user by ID (requires authentication)
     [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {
+        // Delete the user from the database
         var result = await _context.Users.DeleteOneAsync(u => u.Id == id);
         if (result.DeletedCount == 0)
         {
