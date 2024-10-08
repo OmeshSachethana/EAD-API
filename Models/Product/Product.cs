@@ -1,3 +1,14 @@
+/*
+ * File: Product.cs
+ * Description: This class represents a product in the system, containing properties related 
+ *              to the product's details such as name, vendor association, category, 
+ *              description, quantity, price, image URL, and active status.
+ * Author: Sachethana B. L. O.
+ * Date: 02/10/2024
+ * 
+ * This class is used for MongoDB document mapping and includes data annotations for validation.
+ */
+
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.ComponentModel.DataAnnotations;
