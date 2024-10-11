@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using EcommerceAPI.Data; // Adjust this if the namespace is different
 
 [Route("api/[controller]")]
 [ApiController]
@@ -141,4 +142,49 @@ public class ProductsController : ControllerBase
 
         return Ok();
     }
+
+    //update inventory stock 
+    [Authorize(Roles = "Vendor")]
+    [HttpPut("{id}/stock")]
+    public async Task<IActionResult> UpdateStock(string id, [FromBody] UpdateStockRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Update stock request cannot be null.");
+        }
+
+        var vendorIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(vendorIdClaim))
+        {
+            return Unauthorized("User ID not found.");
+        }
+
+        // Find the product by ID and check if it belongs to the vendor
+        var product = await _context.Products.Find(p => p.Id == id && p.VendorId == vendorIdClaim).FirstOrDefaultAsync();
+        if (product == null)
+        {
+            return NotFound("Product not found.");
+        }
+
+        // Update the stock quantity
+        product.Quantity = request.Quantity;
+
+        // Replace the existing product with the updated product
+        await _context.Products.ReplaceOneAsync(p => p.Id == id, product);
+        
+        return Ok(product); // Return the updated product
+    }
+
+    [Authorize(Roles = "Vendor")]
+    [HttpGet("low-stock")]
+    public async Task<IActionResult> GetLowStockProducts()
+    {
+        // Find products where quantity is less than 50
+        var lowStockProducts = await _context.Products
+                                            .Find(p => p.Quantity < 20)
+                                            .ToListAsync();
+
+        return Ok(lowStockProducts);
+    }
+
 }
