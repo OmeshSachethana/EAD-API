@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using EcommerceAPI.Data; // Adjust this if the namespace is different
 
 [Route("api/[controller]")]
 [ApiController]

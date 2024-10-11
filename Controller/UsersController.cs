@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using EcommerceAPI.Data; // Adjust this if the namespace is different
 
 [Route("api/[controller]")]
 [ApiController]
