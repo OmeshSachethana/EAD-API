@@ -76,8 +76,10 @@ public class ProductsController : ControllerBase
             return Unauthorized("User ID not found.");
         }
 
+        // Check user roles
         var isCustomer = User.IsInRole("Customer");
-        var isAdminOrVendor = User.IsInRole("Administrator") || User.IsInRole("Vendor");
+        var isVendor = User.IsInRole("Vendor");
+        var isAdmin = User.IsInRole("Administrator");
 
         // If the user is a customer, return only active products
         if (isCustomer)
@@ -86,13 +88,23 @@ public class ProductsController : ControllerBase
             return Ok(activeProducts);
         }
 
-        // If the user is an admin or vendor, return all products or vendor-specific products
-        var products = isAdminOrVendor
-            ? await _context.Products.Find(_ => true).ToListAsync() // Get all products
-            : await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync(); // Get vendor-specific products
+        // If the user is a vendor, return only their products
+        if (isVendor)
+        {
+            var vendorProducts = await _context.Products.Find(p => p.VendorId == vendorIdClaim).ToListAsync();
+            return Ok(vendorProducts);
+        }
 
-        return Ok(products);
+        // If the user is an admin, return all products
+        if (isAdmin)
+        {
+            var allProducts = await _context.Products.Find(_ => true).ToListAsync(); // Get all products
+            return Ok(allProducts);
+        }
+
+        return Forbid(); // In case of an unknown role
     }
+
 
     // GET: api/products/{id}
     // This method allows a vendor or administrator to retrieve a product by its ID.
